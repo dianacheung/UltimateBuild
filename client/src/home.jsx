@@ -13,11 +13,13 @@ class Home extends Component {
     this.state = { ssid: Cookie.load('ssid') };
     this.handleFormSubmit = this.handleFormSubmit.bind(this);
     this.handleLogout = this.handleLogout.bind(this);
-    //this.setHomeState = this.setHomeState.bind(this);
   }
 
   componentDidMount() {
-    console.log('state ssid', this.state.ssid);
+    // TODO: instead of doing auth check here, able to define a route onEnter method? 
+    // https://github.com/reactjs/react-router/blob/master/examples/auth-flow/app.js
+
+    //console.log('state ssid', this.state.ssid);
     if(this.state.ssid) { // active user
       // redirect to /dashboard
       this.props.history.push('/dashboard');
@@ -29,9 +31,7 @@ class Home extends Component {
 
   // Define the logout handling
   handleLogout() {
-    // make ajax post call to server to logout user
-    console.log('in handleLogout');
-    
+    // make ajax post call to server to logout user    
     var postUrl = '/logout';        
     $.post(postUrl, {})
       .then(() => {

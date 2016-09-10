@@ -27211,14 +27211,16 @@
 	    _this.state = { ssid: _reactCookie2.default.load('ssid') };
 	    _this.handleFormSubmit = _this.handleFormSubmit.bind(_this);
 	    _this.handleLogout = _this.handleLogout.bind(_this);
-	    //this.setHomeState = this.setHomeState.bind(this);
 	    return _this;
 	  }
 
 	  _createClass(Home, [{
 	    key: 'componentDidMount',
 	    value: function componentDidMount() {
-	      console.log('state ssid', this.state.ssid);
+	      // TODO: instead of doing auth check here, able to define a route onEnter method? 
+	      // https://github.com/reactjs/react-router/blob/master/examples/auth-flow/app.js
+
+	      //console.log('state ssid', this.state.ssid);
 	      if (this.state.ssid) {
 	        // active user
 	        // redirect to /dashboard
@@ -27237,9 +27239,7 @@
 	    value: function handleLogout() {
 	      var _this2 = this;
 
-	      // make ajax post call to server to logout user
-	      console.log('in handleLogout');
-
+	      // make ajax post call to server to logout user    
 	      var postUrl = '/logout';
 	      _jquery2.default.post(postUrl, {}).then(function () {
 	        // HACK: needed to call setHomeState to allow updating of setState and route redirect
@@ -37979,6 +37979,10 @@
 
 	var _jquery2 = _interopRequireDefault(_jquery);
 
+	var _configForm = __webpack_require__(243);
+
+	var _configForm2 = _interopRequireDefault(_configForm);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -37996,6 +38000,7 @@
 	    var _this = _possibleConstructorReturn(this, (Dashboard.__proto__ || Object.getPrototypeOf(Dashboard)).call(this, props));
 
 	    _this.state = { configs: [] };
+	    _this.handleConfigFormSubmit = _this.handleConfigFormSubmit.bind(_this);
 	    return _this;
 	  }
 
@@ -38008,8 +38013,45 @@
 	      // assume user is authenicated for now
 	      var getUrl = '/configlist';
 	      _jquery2.default.get(getUrl).then(function (data) {
-	        //console.log('configlist', data);
 	        _this2.setState({ configs: data });
+	      }).catch(function (err) {
+	        console.log('err', err);
+	      });
+	    }
+	  }, {
+	    key: 'setDashboardState',
+	    value: function setDashboardState(newStateObj) {
+	      this.setState(newStateObj);
+	    }
+	  }, {
+	    key: 'handleConfigFormSubmit',
+	    value: function handleConfigFormSubmit(e) {
+	      var _this3 = this;
+
+	      e.preventDefault();
+
+	      // extract data to be submitted
+	      var entry = e.target.elements[0].value.trim();
+	      var output = e.target.elements[1].value.trim();
+	      var test = e.target.elements[2].value.trim();
+	      var loader = e.target.elements[3].value.trim();
+	      var exclude = e.target.elements[4].value.trim();
+	      var presets = e.target.elements[5].value.trim();
+
+	      // TODO: add form validation checks
+
+	      var newConfig = { entry: entry, output: output, test: test, loader: loader, exclude: exclude, presets: presets };
+
+	      // make ajax post call to create new config file for user
+	      var postUrl = '/createconfig';
+	      _jquery2.default.post(postUrl, newConfig).then(function (data) {
+	        // update state of dashboard
+	        var currStateConfigs = _this3.state.configs;
+	        currStateConfigs.push(data);
+	        _this3.setDashboardState(currStateConfigs);
+
+	        // redirect
+	        _this3.props.history.push('/dashboard');
 	      }).catch(function (err) {
 	        console.log('err', err);
 	      });
@@ -38017,7 +38059,20 @@
 	  }, {
 	    key: 'render',
 	    value: function render() {
-	      //console.log('in dashboard render', this.state.configs);
+	      var _this4 = this;
+
+	      // Note: {childrenWithMoreProps} is a placeholder container, similar to ng-view, for displaying the content of different children routes
+
+	      var childrenWithMoreProps = _react2.default.Children.map(this.props.children, function (child) {
+	        if (child.type === _configForm2.default) {
+	          return _react2.default.cloneElement(child, {
+	            handleConfigFormSubmit: _this4.handleConfigFormSubmit
+	          });
+	        } else {
+	          return child;
+	        }
+	      });
+
 	      return _react2.default.createElement(
 	        'div',
 	        null,
@@ -38029,18 +38084,19 @@
 	        _react2.default.createElement(
 	          'p',
 	          null,
-	          'This is the list of saved config files...'
+	          'My Config Files'
 	        ),
 	        _react2.default.createElement(
 	          'ul',
 	          null,
 	          this.state.configs.map(function (config, index) {
+	            var href = "/dashboard/configDetail/" + config._id;
 	            return _react2.default.createElement(
 	              'li',
-	              null,
+	              { key: index },
 	              _react2.default.createElement(
 	                _reactRouter.Link,
-	                { to: '/dashboard/configDetail/{config._id}' },
+	                { to: href },
 	                'Config # ',
 	                config._id
 	              )
@@ -38048,28 +38104,11 @@
 	          })
 	        ),
 	        _react2.default.createElement(
-	          'ul',
-	          null,
-	          _react2.default.createElement(
-	            'li',
-	            null,
-	            _react2.default.createElement(
-	              _reactRouter.Link,
-	              { to: '/dashboard/configForm' },
-	              'Config Form'
-	            )
-	          ),
-	          _react2.default.createElement(
-	            'li',
-	            null,
-	            _react2.default.createElement(
-	              _reactRouter.Link,
-	              { to: '/dashboard/configDetail/1' },
-	              'Config Detail'
-	            )
-	          )
+	          _reactRouter.Link,
+	          { to: '/dashboard/configForm' },
+	          'Add a Config File'
 	        ),
-	        this.props.children
+	        childrenWithMoreProps
 	      );
 	    }
 	  }]);
@@ -38083,7 +38122,7 @@
 /* 243 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	"use strict";
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
@@ -38113,15 +38152,26 @@
 	  }
 
 	  _createClass(ConfigForm, [{
-	    key: 'render',
+	    key: "render",
 	    value: function render() {
 	      return _react2.default.createElement(
-	        'div',
+	        "div",
 	        null,
 	        _react2.default.createElement(
-	          'h3',
+	          "h3",
 	          null,
-	          'Config Form'
+	          "Config Form"
+	        ),
+	        _react2.default.createElement(
+	          "form",
+	          { className: "configForm", onSubmit: this.props.handleConfigFormSubmit },
+	          _react2.default.createElement("input", { type: "text", name: "entry", placeholder: "entry" }),
+	          _react2.default.createElement("input", { type: "text", name: "output", placeholder: "output" }),
+	          _react2.default.createElement("input", { type: "text", name: "test", placeholder: "test" }),
+	          _react2.default.createElement("input", { type: "text", name: "loader", placeholder: "loader" }),
+	          _react2.default.createElement("input", { type: "text", name: "exclude", placeholder: "exclude" }),
+	          _react2.default.createElement("input", { type: "text", name: "presets", placeholder: "presets" }),
+	          _react2.default.createElement("input", { type: "submit", value: "Add" })
 	        )
 	      );
 	    }
@@ -38148,6 +38198,10 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
+	var _jquery = __webpack_require__(238);
+
+	var _jquery2 = _interopRequireDefault(_jquery);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -38159,13 +38213,42 @@
 	var ConfigDetail = function (_Component) {
 	  _inherits(ConfigDetail, _Component);
 
-	  function ConfigDetail() {
+	  function ConfigDetail(props) {
 	    _classCallCheck(this, ConfigDetail);
 
-	    return _possibleConstructorReturn(this, (ConfigDetail.__proto__ || Object.getPrototypeOf(ConfigDetail)).apply(this, arguments));
+	    var _this = _possibleConstructorReturn(this, (ConfigDetail.__proto__ || Object.getPrototypeOf(ConfigDetail)).call(this, props));
+
+	    _this.state = { config: {} };
+	    return _this;
 	  }
 
 	  _createClass(ConfigDetail, [{
+	    key: 'componentWillMount',
+	    value: function componentWillMount() {
+	      var _this2 = this;
+
+	      // make ajax call to get a specific config by id
+	      var getUrl = '/configbyid/' + this.props.params.id;
+	      _jquery2.default.get(getUrl).then(function (data) {
+	        _this2.setState({ config: data });
+	      }).catch(function (err) {
+	        console.log('err', err);
+	      });
+	    }
+	  }, {
+	    key: 'componentWillReceiveProps',
+	    value: function componentWillReceiveProps(nextProps) {
+	      var _this3 = this;
+
+	      // make ajax call to get a specific config by id
+	      var getUrl = '/configbyid/' + nextProps.params.id;
+	      _jquery2.default.get(getUrl).then(function (data) {
+	        _this3.setState({ config: data });
+	      }).catch(function (err) {
+	        console.log('err', err);
+	      });
+	    }
+	  }, {
 	    key: 'render',
 	    value: function render() {
 	      return _react2.default.createElement(
@@ -38175,6 +38258,17 @@
 	          'h3',
 	          null,
 	          'Config Detail'
+	        ),
+	        _react2.default.createElement(
+	          'p',
+	          null,
+	          'Config # ',
+	          this.props.params.id
+	        ),
+	        _react2.default.createElement(
+	          'p',
+	          null,
+	          JSON.stringify(this.state.config)
 	        )
 	      );
 	    }

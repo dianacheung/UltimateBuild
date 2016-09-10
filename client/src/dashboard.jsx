@@ -1,12 +1,14 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router';
 import $ from 'jquery';
+import ConfigForm from './configForm.jsx';
 
 class Dashboard extends Component {
 
   constructor(props) {
     super(props);
     this.state = { configs: [] };
+    this.handleConfigFormSubmit = this.handleConfigFormSubmit.bind(this);
   }
 
   componentWillMount() {
@@ -15,30 +17,74 @@ class Dashboard extends Component {
     var getUrl = '/configlist';        
     $.get(getUrl)
       .then((data) => {
-        //console.log('configlist', data);
         this.setState({ configs: data });
       })
       .catch((err) => { console.log('err', err); });
 
   }
 
+  setDashboardState(newStateObj) {
+    this.setState(newStateObj);
+  }
+
+  handleConfigFormSubmit(e) {
+    e.preventDefault();
+
+    // extract data to be submitted
+    var entry = e.target.elements[0].value.trim();
+    var output = e.target.elements[1].value.trim();
+    var test = e.target.elements[2].value.trim();
+    var loader = e.target.elements[3].value.trim();
+    var exclude = e.target.elements[4].value.trim();
+    var presets = e.target.elements[5].value.trim();
+
+    // TODO: add form validation checks
+
+    var newConfig = {entry: entry, output: output, test: test, loader: loader, exclude: exclude, presets: presets};
+
+    // make ajax post call to create new config file for user
+    var postUrl = '/createconfig';
+    $.post(postUrl, newConfig)
+      .then((data)=> {
+        // update state of dashboard
+        var currStateConfigs = this.state.configs;
+        currStateConfigs.push(data);
+        this.setDashboardState(currStateConfigs);
+        
+        // redirect
+        this.props.history.push('/dashboard');
+      })
+      .catch((err) => {console.log('err', err)});
+  }
+
   render() {
-    //console.log('in dashboard render', this.state.configs);
+
+    // Note: {childrenWithMoreProps} is a placeholder container, similar to ng-view, for displaying the content of different children routes
+    
+    var childrenWithMoreProps = React.Children.map(this.props.children, (child) => {
+      if(child.type === ConfigForm) {
+        return React.cloneElement(child, {
+          handleConfigFormSubmit: this.handleConfigFormSubmit
+        });
+      } else {
+        return child;
+      }
+    });
+
     return(
       <div>
         <h2>Dashboard</h2>
-        <p>This is the list of saved config files...</p>
+        <p>My Config Files</p>
         <ul>
         {this.state.configs.map((config, index) => {
-          return <li><Link to="/dashboard/configDetail/{config._id}">Config # {config._id}</Link></li>;
+          var href = "/dashboard/configDetail/" + config._id;
+          return <li key={index}><Link to={href}>Config # {config._id}</Link></li>;
         })}
         </ul>
-        <ul>
-          <li><Link to="/dashboard/configForm">Config Form</Link></li>
-          <li><Link to="/dashboard/configDetail/1">Config Detail</Link></li>
-        </ul>
 
-        {this.props.children}
+        <Link to="/dashboard/configForm">Add a Config File</Link>
+
+        {childrenWithMoreProps}
       </div>
     );
   }
